@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { $ } from "bun";
 import chalk from "chalk";
 import inquirer from "inquirer";
