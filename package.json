@@ -1,0 +1,40 @@
+{
+    "name": "dotenvx-interactive-cli",
+    "version": "0.1.0",
+    "description": "A CLI tool for Dotenx to manage environment variables interactively.",
+    "author": "Maxiviper117",
+    "license": "MIT",
+    "keywords": [
+        "cli",
+        "typescript",
+        "bun",
+        "dotenx"
+    ],
+    "scripts": {
+        "build": "bun run bun.build.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Maxiviper117/dotenvx-interactive-cli.git"
+    },
+    "module": "dist/index.js",
+    "type": "module",
+    "bin": {
+        "dotenvx-interactive": "dist/index.js"
+    },
+    "publishConfig": {
+        "access": "public"
+    },
+    "dependencies": {
+        "chalk": "^5.4.1",
+        "changeset": "^0.2.6",
+        "commander": "^13.1.0",
+        "inquirer": "^12.5.0"
+    },
+    "devDependencies": {
+        "@types/bun": "latest"
+    },
+    "peerDependencies": {
+        "typescript": "^5.0.0"
+    }
+}

@@ -1,0 +1,33 @@
+# Ignore node_modules
+node_modules/
+
+# Ignore build output
+dist/
+
+# Ignore test files
+test/
+*.test.ts
+*.spec.ts
+
+# Ignore configuration files
+tsconfig.json
+.eslintrc.json
+.prettierrc
+
+# Ignore documentation files
+README.md
+LICENSE
+
+# Ignore environment files
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Ignore logs
+logs/
+*.log
+
+# Ignore miscellaneous files
+.DS_Store
