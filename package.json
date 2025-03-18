@@ -26,9 +26,12 @@
         "access": "public"
     },
     "dependencies": {
+        "@types/glob": "^8.1.0",
+        "brace-expansion": "^4.0.0",
         "chalk": "^5.4.1",
         "changeset": "^0.2.6",
         "commander": "^13.1.0",
+        "glob": "^11.0.1",
         "inquirer": "^12.5.0"
     },
     "devDependencies": {
