@@ -17,11 +17,11 @@
     ],
     "scripts": {
         "build": "bun run bun.build.js",
-        "prepublishOnly": "bun run build",
         "changeset": "changeset",
         "changeset:add": "changeset add",
         "changeset:version": "changeset version",
-        "changeset:publish": "changeset publish"
+        "changeset:publish": "changeset publish",
+        "prechangeset:publish": "bun run build"
     },
     "repository": {
         "type": "git",
