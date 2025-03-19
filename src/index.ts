@@ -1,13 +1,25 @@
 #!/usr/bin/env node
-import { $ } from "bun";
+import { exec } from "child_process";
 import chalk from "chalk";
 import inquirer from "inquirer";
 import { glob } from "glob";
 
+function executeCommand(command: string): Promise<{ stdout: string; stderr: string; exitCode: number }> {
+    return new Promise((resolve, reject) => {
+        exec(command, (error, stdout, stderr) => {
+            if (error) {
+                reject({ stdout, stderr, exitCode: error.code || 1 });
+            } else {
+                resolve({ stdout, stderr, exitCode: 0 });
+            }
+        });
+    });
+}
+
 async function checkDotenvxInstallation() {
     try {
-        await $`echo "dotenvx version"`;
-        const { exitCode } = await $`dotenvx --version`;
+        await executeCommand("echo 'dotenvx version'");
+        const { exitCode } = await executeCommand("dotenvx --version");
         return exitCode === 0;
     } catch {
         return false;
@@ -40,7 +52,8 @@ async function selectFiles(files: string[], action: string): Promise<string[]> {
     const { selectedFiles } = await inquirer.prompt({
         type: "checkbox",
         name: "selectedFiles",
-        message: `Select .env files to ${action}:\n  ${chalk.dim(
+        message: `Select .env files to ${action}:
+  ${chalk.dim(
             "(Use arrow keys to move, Space to select, A to toggle all, I to invert)"
         )}`,
         choices: [
@@ -123,7 +136,7 @@ async function main() {
 
                 if (selectedFiles.length > 0) {
                     const fileArgs = `-f ${selectedFiles.join(" ")}`;
-                    await $`dotenvx encrypt ${{ raw: fileArgs }}`;
+                    await executeCommand(`dotenvx encrypt ${fileArgs}`);
                     console.log(chalk.green("✓ Files encrypted successfully"));
                 } else {
                     console.log(
@@ -141,7 +154,7 @@ async function main() {
 
                 if (selectedFiles.length > 0) {
                     const fileArgs = `-f ${selectedFiles.join(" ")}`;
-                    await $`dotenvx decrypt ${{ raw: fileArgs }}`;
+                    await executeCommand(`dotenvx decrypt ${fileArgs}`);
                     console.log(chalk.green("✓ Files decrypted successfully"));
                 } else {
                     console.log(
@@ -154,7 +167,7 @@ async function main() {
             break;
         case "precommit":
             try {
-                await $`dotenvx ext precommit --install`;
+                await executeCommand("dotenvx ext precommit --install");
                 console.log(
                     chalk.green("✓ Precommit hook installed successfully")
                 );
