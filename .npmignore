@@ -31,3 +31,4 @@ logs/
 
 # Ignore miscellaneous files
 .DS_Store
+.github/
