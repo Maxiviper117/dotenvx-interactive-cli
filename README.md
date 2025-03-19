@@ -43,12 +43,16 @@ npx dotenvx-interactive
 
 1. Navigate to your project directory where your .env files are located
 2. Run the CLI tool:
-   ```bash
-   dotenvx-interactive
-   # or with npx
-   npx dotenvx-interactive-cli
-   ```
-3. Choose from the available options:
+
+When installed globally:
+```bash
+dotenvx-interactive
+```
+or use npx:
+```bash
+npx dotenvx-interactive-cli
+```
+1. Choose from the available options:
    - Encrypt .env files
    - Decrypt .env files
    - Install precommit hook
