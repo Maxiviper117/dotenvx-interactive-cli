@@ -1,5 +1,11 @@
 # dotenvx-interactive-cli
 
+## 0.2.2
+
+### Patch Changes
+
+- fix README
+
 ## 0.2.1
 
 ### Patch Changes
