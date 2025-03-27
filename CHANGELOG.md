@@ -1,5 +1,11 @@
 # dotenvx-interactive-cli
 
+## 0.2.3
+
+### Patch Changes
+
+- Fix typo in readme
+
 ## 0.2.2
 
 ### Patch Changes
