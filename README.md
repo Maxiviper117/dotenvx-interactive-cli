@@ -27,7 +27,7 @@ npm install -g dotenvx-interactive-cli
 Or use it directly with npx:
 
 ```bash
-npx dotenvx-interactive
+npx dotenvx-interactive-cli
 ```
 
 ## Features
