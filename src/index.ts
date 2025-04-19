@@ -14,7 +14,7 @@ async function executeCommand(
     cmd: string,
     ...args: string[]
 ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
-    const result = await $`${cmd} ${args}`.nothrow();
+    const result = await $`${cmd} ${args.join(' ')}`.nothrow();
     return {
         stdout: result.stdout?.toString() ?? "",
         stderr: result.stderr?.toString() ?? "",
@@ -123,7 +123,7 @@ async function main() {
 Usage: dotenvx-interactive [options]\n
 Options:
   --help, -h     Show this help message\n`);
-        throw new Error("Help displayed");
+        process.exit(0);
     }
 
     const isDotenvxInstalled = await checkDotenvxInstallation();
