@@ -1,36 +1,53 @@
 #!/usr/bin/env node
-import { exec } from "child_process";
 import chalk from "chalk";
 import inquirer from "inquirer";
 import { glob } from "glob";
+import { $ } from "zx";
 
-function executeCommand(command: string): Promise<{ stdout: string; stderr: string; exitCode: number }> {
-    return new Promise((resolve, reject) => {
-        exec(command, (error, stdout, stderr) => {
-            if (error) {
-                reject({ stdout, stderr, exitCode: error.code || 1 });
-            } else {
-                resolve({ stdout, stderr, exitCode: 0 });
-            }
-        });
-    });
+/**
+ * Executes a shell command with proper argument handling
+ * @param cmd - The command to execute
+ * @param args - Additional arguments to pass to the command
+ * @returns Object containing stdout, stderr, and exit code
+ */
+async function executeCommand(
+    cmd: string,
+    ...args: string[]
+): Promise<{ stdout: string; stderr: string; exitCode: number }> {
+    const result = await $`${cmd} ${args}`.nothrow();
+    return {
+        stdout: result.stdout?.toString() ?? "",
+        stderr: result.stderr?.toString() ?? "",
+        exitCode: result.exitCode ?? 0,
+    };
 }
 
+/**
+ * Checks if dotenvx CLI is installed and accessible
+ * @returns Promise<boolean> true if dotenvx is installed, false otherwise
+ */
 async function checkDotenvxInstallation() {
     try {
-        await executeCommand("echo 'dotenvx version'");
-        const { exitCode } = await executeCommand("dotenvx --version");
+        const { exitCode } = await executeCommand("dotenvx", "--version");
         return exitCode === 0;
     } catch {
         return false;
     }
 }
 
+/**
+ * Checks for the existence of .env.keys file in the current directory
+ * @returns Promise<boolean> true if .env.keys exists, false otherwise
+ */
 async function checkEnvKeysFile() {
     const files = await glob(".env.keys", { nodir: true });
     return files.length > 0;
 }
 
+/**
+ * Finds all .env files in the current directory, excluding .env.keys and .vault files
+ * @returns Promise<string[]> Array of found .env file paths
+ */
 async function findEnvFiles(): Promise<string[]> {
     const files = await glob(".env*", {
         ignore: [".env.keys", ".env.keys.json", "*.vault"],
@@ -41,6 +58,12 @@ async function findEnvFiles(): Promise<string[]> {
     );
 }
 
+/**
+ * Displays an interactive prompt for selecting .env files
+ * @param files - Array of .env files to choose from
+ * @param action - The action to perform on selected files (encrypt/decrypt)
+ * @returns Promise<string[]> Array of selected file paths
+ */
 async function selectFiles(files: string[], action: string): Promise<string[]> {
     if (files.length === 0) {
         console.log(
@@ -54,8 +77,8 @@ async function selectFiles(files: string[], action: string): Promise<string[]> {
         name: "selectedFiles",
         message: `Select .env files to ${action}:
   ${chalk.dim(
-            "(Use arrow keys to move, Space to select, A to toggle all, I to invert)"
-        )}`,
+      "(Use arrow keys to move, Space to select, A to toggle all, I to invert)"
+  )}`,
         choices: [
             {
                 name: `All files ${chalk.dim("← Select all .env files")}`,
@@ -88,9 +111,22 @@ async function selectFiles(files: string[], action: string): Promise<string[]> {
     return selectedFiles;
 }
 
+/**
+ * Main application function that handles the interactive CLI workflow
+ * Checks for dotenvx installation, presents options, and executes selected actions
+ * @throws Error if dotenvx is not installed or .env.keys is missing
+ */
 async function main() {
+    // Help flag support
+    if (process.argv.includes("--help") || process.argv.includes("-h")) {
+        console.log(`\n${chalk.bold("dotenvx-interactive-cli")}
+Usage: dotenvx-interactive [options]\n
+Options:
+  --help, -h     Show this help message\n`);
+        throw new Error("Help displayed");
+    }
+
     const isDotenvxInstalled = await checkDotenvxInstallation();
-    
     if (!isDotenvxInstalled) {
         console.log(chalk.red("❌ dotenvx is not installed on your system."));
         console.log(
@@ -98,7 +134,7 @@ async function main() {
                 "Please install it using: npm install -g @dotenvx/dotenvx"
             )
         );
-        process.exit(1);
+        throw new Error("dotenvx not installed");
     }
 
     const isEnvKeysFilePresent = await checkEnvKeysFile();
@@ -109,7 +145,7 @@ async function main() {
                 "No .env.keys file found. Please create one to proceed."
             )
         );
-        process.exit(1);
+        throw new Error(".env.keys file not found");
     }
 
     console.log(chalk.green("✓ dotenvx is installed"));
@@ -133,10 +169,13 @@ async function main() {
             try {
                 const files = await findEnvFiles();
                 const selectedFiles = await selectFiles(files, "encrypt");
-
                 if (selectedFiles.length > 0) {
-                    const fileArgs = `-f ${selectedFiles.join(" ")}`;
-                    await executeCommand(`dotenvx encrypt ${fileArgs}`);
+                    await executeCommand(
+                        "dotenvx",
+                        "encrypt",
+                        "-f",
+                        ...selectedFiles
+                    );
                     console.log(chalk.green("✓ Files encrypted successfully"));
                 } else {
                     console.log(
@@ -145,16 +184,20 @@ async function main() {
                 }
             } catch (error) {
                 console.error(chalk.red("Error encrypting files:"), error);
+                throw error;
             }
             break;
         case "decrypt":
             try {
                 const files = await findEnvFiles();
                 const selectedFiles = await selectFiles(files, "decrypt");
-
                 if (selectedFiles.length > 0) {
-                    const fileArgs = `-f ${selectedFiles.join(" ")}`;
-                    await executeCommand(`dotenvx decrypt ${fileArgs}`);
+                    await executeCommand(
+                        "dotenvx",
+                        "decrypt",
+                        "-f",
+                        ...selectedFiles
+                    );
                     console.log(chalk.green("✓ Files decrypted successfully"));
                 } else {
                     console.log(
@@ -163,11 +206,17 @@ async function main() {
                 }
             } catch (error) {
                 console.error(chalk.red("Error decrypting files:"), error);
+                throw error;
             }
             break;
         case "precommit":
             try {
-                await executeCommand("dotenvx ext precommit --install");
+                await executeCommand(
+                    "dotenvx",
+                    "ext",
+                    "precommit",
+                    "--install"
+                );
                 console.log(
                     chalk.green("✓ Precommit hook installed successfully")
                 );
@@ -176,11 +225,21 @@ async function main() {
                     chalk.red("Error installing precommit hook:"),
                     error
                 );
+                throw error;
             }
             break;
         case "exit":
-            process.exit(0);
+            throw new Error("User exited");
     }
 }
 
-main().catch(console.error);
+process.on("uncaughtException", (error) => {
+    if (error instanceof Error && error.name === "ExitPromptError") {
+        console.log("👋 until next time!");
+    } else {
+        // Rethrow unknown errors
+        throw error;
+    }
+});
+
+main().catch((err) => process.exit(1));
