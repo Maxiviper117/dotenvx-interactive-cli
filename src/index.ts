@@ -16,12 +16,14 @@ async function executeCommand(
     cmd: string,
     ...args: string[]
 ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
-    const result = await $`${cmd} ${args.join(" ")}`.nothrow();
+    // Pass each arg separately so zx quotes them correctly
+    const result = await $([cmd, ...args]).nothrow();
     return {
         stdout: result.stdout?.toString() ?? "",
         stderr: result.stderr?.toString() ?? "",
         exitCode: result.exitCode ?? 0,
     };
+}
 }
 
 /**
