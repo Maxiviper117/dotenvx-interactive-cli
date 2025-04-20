@@ -1,6 +1,6 @@
 {
     "name": "dotenvx-interactive-cli",
-    "version": "0.3.0",
+    "version": "0.4.0",
     "description": "An interactive CLI tool for managing .env files with dotenvx - encrypt, decrypt, and manage environment variables with ease.",
     "author": "Maxiviper117",
     "license": "MIT",
@@ -35,7 +35,7 @@
     "module": "dist/index.js",
     "type": "module",
     "bin": {
-        "dotenvx-interactive": "dist/index.js"
+        "dotenvx-interactive-cli": "dist/index.js"
     },
     "publishConfig": {
         "access": "public"
@@ -55,8 +55,7 @@
         "chalk": "^5.4.1",
         "commander": "^13.1.0",
         "glob": "^11.0.1",
-        "inquirer": "^12.5.2",
-        "zx": "^8.5.3"
+        "inquirer": "^12.5.2"
     },
     "devDependencies": {
         "@types/bun": "^1.2.10",

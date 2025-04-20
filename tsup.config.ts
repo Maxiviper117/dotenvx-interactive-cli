@@ -11,7 +11,8 @@ export default defineConfig({
     minify: false, // Disable minification for faster builds
     sourcemap: false,
     treeshake: true, // Enable tree-shaking
+    bundle: false,
     banner: {
-        js: "#!/usr/bin/env zx",
+        js: "#!/usr/bin/env node",
     },
 });

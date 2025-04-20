@@ -1,13 +1,11 @@
 import chalk from "chalk";
 import inquirer from "inquirer";
 import { promises as fs } from "fs";
-import path from "path";
-import { spawnSync } from "child_process";
-import { $ } from "zx";
+import { spawn, spawnSync } from "child_process";
 import { glob } from "glob";
 
 /**
- * Executes a shell command with proper argument handling
+ * Executes a shell command with proper argument handling using child_process.spawn
  * @param cmd - The command to execute
  * @param args - Additional arguments to pass to the command
  * @returns Object containing stdout, stderr, and exit code
@@ -16,14 +14,26 @@ async function executeCommand(
     cmd: string,
     ...args: string[]
 ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
-    // Use template string so zx handles quoting/escaping
-    console.log(chalk.blue(`Executing: ${[cmd, ...args].join(" ")}`));
-    const result = await $`${cmd} ${args}`.nothrow();
-    return {
-        stdout: result.stdout?.toString() ?? "",
-        stderr: result.stderr?.toString() ?? "",
-        exitCode: result.exitCode ?? 0,
-    };
+    return new Promise((resolve) => {
+        const child = spawn(cmd, args, { shell: true });
+        let stdout = "";
+        let stderr = "";
+        child.stdout?.on("data", (data: Buffer) => {
+            process.stdout.write(data);
+            stdout += data.toString();
+        });
+        child.stderr?.on("data", (data: Buffer) => {
+            process.stderr.write(data);
+            stderr += data.toString();
+        });
+        child.on("close", (code: number) => {
+            resolve({
+                stdout,
+                stderr,
+                exitCode: code ?? 0,
+            });
+        });
+    });
 }
 
 /**

@@ -29,9 +29,6 @@ importers:
       inquirer:
         specifier: ^12.5.2
         version: 12.5.2(@types/node@22.14.1)
-      zx:
-        specifier: ^8.5.3
-        version: 8.5.3
     devDependencies:
       '@types/bun':
         specifier: ^1.2.10
@@ -1186,11 +1183,6 @@ packages:
     resolution: {integrity: sha512-cYVsTjKl8b+FrnidjibDWskAv7UKOfcwaVZdp/it9n1s9fU3IkgDbhdIRKCW4JDsAlECJY0ytoVPT3sK6kideA==}
     engines: {node: '>=18'}
 
-  zx@8.5.3:
-    resolution: {integrity: sha512-TsGLAt8Ngr4wDXLZmN9BT+6FWVLFbqdQ0qpXkV3tIfH7F+MgN/WUeSY7W4nNqAntjWunmnRaznpyxtJRPhCbUQ==}
-    engines: {node: '>= 12.17.0'}
-    hasBin: true
-
 snapshots:
 
   '@babel/runtime@7.27.0':
@@ -2268,5 +2260,3 @@ snapshots:
       strip-ansi: 7.1.0
 
   yoctocolors-cjs@2.1.2: {}
-
-  zx@8.5.3: {}
