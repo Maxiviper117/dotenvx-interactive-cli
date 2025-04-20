@@ -1,7 +1,8 @@
-#!/usr/bin/env node
 import chalk from "chalk";
 import inquirer from "inquirer";
-import { glob } from "glob";
+import { promises as fs } from "fs";
+import path from "path";
+import { spawnSync } from "child_process";
 import { $ } from "zx";
 
 /**
@@ -23,25 +24,30 @@ async function executeCommand(
 }
 
 /**
- * Checks if dotenvx CLI is installed and accessible
- * @returns Promise<boolean> true if dotenvx is installed, false otherwise
+ * Fast check for dotenvx CLI in PATH (using which/where)
+ * @returns Promise<boolean>
  */
-async function checkDotenvxInstallation() {
-    try {
-        const { exitCode } = await executeCommand("dotenvx", "--version");
-        return exitCode === 0;
-    } catch {
-        return false;
-    }
+async function checkDotenvxInstallation(): Promise<boolean> {
+  try {
+    const cmd = process.platform === "win32" ? "where" : "which";
+    const result = spawnSync(cmd, ["dotenvx"], { encoding: "utf8" });
+    return result.status === 0;
+  } catch {
+    return false;
+  }
 }
 
 /**
- * Checks for the existence of .env.keys file in the current directory
+ * Checks for the existence of .env.keys file
  * @returns Promise<boolean> true if .env.keys exists, false otherwise
  */
-async function checkEnvKeysFile() {
-    const files = await glob(".env.keys", { nodir: true });
-    return files.length > 0;
+async function checkEnvKeysFile(): Promise<boolean> {
+    try {
+        await fs.access(".env.keys");
+        return true;
+    } catch {
+        return false;
+    }
 }
 
 /**
@@ -49,12 +55,14 @@ async function checkEnvKeysFile() {
  * @returns Promise<string[]> Array of found .env file paths
  */
 async function findEnvFiles(): Promise<string[]> {
-    const files = await glob(".env*", {
-        ignore: [".env.keys", ".env.keys.json", "*.vault"],
-        nodir: true,
-    });
+    const files = await fs.readdir(process.cwd());
     return files.filter(
-        (file) => !file.endsWith(".keys") && !file.endsWith(".vault")
+        (file) =>
+            file.startsWith(".env") &&
+            !file.endsWith(".keys") &&
+            !file.endsWith(".vault") &&
+            file !== ".env.keys" &&
+            file !== ".env.keys.json"
     );
 }
 
@@ -116,42 +124,45 @@ async function selectFiles(files: string[], action: string): Promise<string[]> {
 
 /**
  * Main application function that handles the interactive CLI workflow
- * Checks for dotenvx installation, presents options, and executes selected actions
- * @throws Error if dotenvx is not installed or .env.keys is missing
+ * Optimized for performance: checks for dotenvx and .env.keys in parallel
  */
 async function main() {
+    console.log(chalk.bold("dotenvx-interactive-cli"));
+    console.time("Total Initialization Time");
+
     // Help flag support
+    console.time("Help Flag Check");
     if (process.argv.includes("--help") || process.argv.includes("-h")) {
         console.log(`\n${chalk.bold("dotenvx-interactive-cli")}
 Usage: dotenvx-interactive [options]\n
 Options:
   --help, -h     Show this help message\n`);
+        console.timeEnd("Help Flag Check");
         process.exit(0);
     }
+    console.timeEnd("Help Flag Check");
 
-    const isDotenvxInstalled = await checkDotenvxInstallation();
+    // Run both checks in parallel
+    console.time("Startup Checks");
+    const [isDotenvxInstalled, isEnvKeysFilePresent] = await Promise.all([
+        checkDotenvxInstallation(),
+        checkEnvKeysFile(),
+    ]);
+    console.timeEnd("Startup Checks");
+
     if (!isDotenvxInstalled) {
         console.log(chalk.red("❌ dotenvx is not installed on your system."));
-        console.log(
-            chalk.yellow(
-                "Please install it using: npm install -g @dotenvx/dotenvx"
-            )
-        );
+        console.log(chalk.yellow("Please install it using: npm install -g @dotenvx/dotenvx"));
         throw new Error("dotenvx not installed");
     }
 
-    const isEnvKeysFilePresent = await checkEnvKeysFile();
-
     if (!isEnvKeysFilePresent) {
-        console.log(
-            chalk.yellow(
-                "No .env.keys file found. Please create one to proceed."
-            )
-        );
+        console.log(chalk.yellow("No .env.keys file found. Please create one to proceed."));
         throw new Error(".env.keys file not found");
     }
 
     console.log(chalk.green("👌 dotenvx is installed"));
+    console.timeEnd("Total Initialization Time");
     console.log();
 
     const answers = await inquirer.prompt([
