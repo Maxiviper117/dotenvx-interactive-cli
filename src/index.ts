@@ -16,15 +16,16 @@ async function executeCommand(
     cmd: string,
     ...args: string[]
 ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
-    // Pass each arg separately so zx quotes them correctly
-    const result = await $([cmd, ...args]).nothrow();
+    // Use template string so zx handles quoting/escaping
+    console.log(chalk.blue(`Executing: ${[cmd, ...args].join(" ")}`));
+    const result = await $`${cmd} ${args}`.nothrow();
     return {
         stdout: result.stdout?.toString() ?? "",
         stderr: result.stderr?.toString() ?? "",
         exitCode: result.exitCode ?? 0,
     };
 }
-}
+
 
 /**
  * Fast check for dotenvx CLI in PATH (using which/where)
@@ -212,13 +213,17 @@ Options:
                 const files = await findEnvFiles();
                 const selectedFiles = await selectFiles(files, "decrypt");
                 if (selectedFiles.length > 0) {
-                    await executeCommand(
+                    const execResult = await executeCommand(
                         "dotenvx",
                         "decrypt",
                         "-f",
                         ...selectedFiles
                     );
-                    console.log(chalk.green("✓ Files decrypted successfully"));
+                    if (execResult.exitCode === 0) {
+                        console.log(chalk.green("✓ Files decrypted successfully"));
+                    } else {
+                        console.error(chalk.red("❌ Failed to decrypt files:"), execResult.stderr);
+                    }
                 } else {
                     console.log(
                         chalk.yellow("No files selected for decryption")
@@ -257,8 +262,8 @@ process.on("uncaughtException", (error) => {
     if (error instanceof Error && error.name === "ExitPromptError") {
         console.log("👋 until next time!");
     } else {
-        // Rethrow unknown errors
-        throw error;
+        console.error(chalk.red("Unexpected error:"), error);
+        process.exit(1);
     }
 });
 
