@@ -248,4 +248,7 @@ process.on("uncaughtException", (error) => {
     }
 });
 
-main().catch((err) => process.exit(1));
+main().catch((err) => {
+    console.error(chalk.red("❌ An error occurred:"), err);
+    process.exit(1);
+});
