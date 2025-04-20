@@ -14,7 +14,7 @@ async function executeCommand(
     cmd: string,
     ...args: string[]
 ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
-    const result = await $`${cmd} ${args.join(' ')}`.nothrow();
+    const result = await $`${cmd} ${args.join(" ")}`.nothrow();
     return {
         stdout: result.stdout?.toString() ?? "",
         stderr: result.stderr?.toString() ?? "",
@@ -75,10 +75,13 @@ async function selectFiles(files: string[], action: string): Promise<string[]> {
     const { selectedFiles } = await inquirer.prompt({
         type: "checkbox",
         name: "selectedFiles",
-        message: `Select .env files to ${action}:
-  ${chalk.dim(
-      "(Use arrow keys to move, Space to select, A to toggle all, I to invert)"
-  )}`,
+        message: `Select .env files to ${action}:\n`,
+        // instructions: chalk.dim("(Press Space to select, Enter to confirm)"),
+        instructions: `${chalk.dim("(Press ")} ${chalk.blue(
+            "Space"
+        )} ${chalk.dim("to select, ")}${chalk.blue("Enter")} ${chalk.dim(
+            "to confirm, "
+        )}${chalk.blue("Ctrl/Cmd + C")} ${chalk.dim("to exit)")} `,
         choices: [
             {
                 name: `All files ${chalk.dim("← Select all .env files")}`,
@@ -148,7 +151,8 @@ Options:
         throw new Error(".env.keys file not found");
     }
 
-    console.log(chalk.green("✓ dotenvx is installed"));
+    console.log(chalk.green("👌 dotenvx is installed"));
+    console.log();
 
     const answers = await inquirer.prompt([
         {
@@ -163,6 +167,8 @@ Options:
             ],
         },
     ]);
+
+    console.log();
 
     switch (answers.action) {
         case "encrypt":
@@ -218,7 +224,7 @@ Options:
                     "--install"
                 );
                 console.log(
-                    chalk.green("✓ Precommit hook installed successfully")
+                    chalk.green("👍 Precommit hook installed successfully")
                 );
             } catch (error) {
                 console.error(
