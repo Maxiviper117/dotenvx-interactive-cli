@@ -4,6 +4,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import { spawnSync } from "child_process";
 import { $ } from "zx";
+import { glob } from "glob";
 
 /**
  * Executes a shell command with proper argument handling
@@ -55,14 +56,14 @@ async function checkEnvKeysFile(): Promise<boolean> {
  * @returns Promise<string[]> Array of found .env file paths
  */
 async function findEnvFiles(): Promise<string[]> {
-    const files = await fs.readdir(process.cwd());
+    const files = await glob(".env*", {
+        ignore: [".env.keys", ".env.keys.json", "*.vault"],
+        nodir: true,
+    });
     return files.filter(
         (file) =>
-            file.startsWith(".env") &&
             !file.endsWith(".keys") &&
-            !file.endsWith(".vault") &&
-            file !== ".env.keys" &&
-            file !== ".env.keys.json"
+            !file.endsWith(".vault")
     );
 }
 
