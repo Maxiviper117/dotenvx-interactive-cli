@@ -26,19 +26,18 @@ async function executeCommand(
     };
 }
 
-
 /**
  * Fast check for dotenvx CLI in PATH (using which/where)
  * @returns Promise<boolean>
  */
 async function checkDotenvxInstallation(): Promise<boolean> {
-  try {
-    const cmd = process.platform === "win32" ? "where" : "which";
-    const result = spawnSync(cmd, ["dotenvx"], { encoding: "utf8" });
-    return result.status === 0;
-  } catch {
-    return false;
-  }
+    try {
+        const cmd = process.platform === "win32" ? "where" : "which";
+        const result = spawnSync(cmd, ["dotenvx"], { encoding: "utf8" });
+        return result.status === 0;
+    } catch {
+        return false;
+    }
 }
 
 /**
@@ -64,9 +63,7 @@ async function findEnvFiles(): Promise<string[]> {
         nodir: true,
     });
     return files.filter(
-        (file) =>
-            !file.endsWith(".keys") &&
-            !file.endsWith(".vault")
+        (file) => !file.endsWith(".keys") && !file.endsWith(".vault")
     );
 }
 
@@ -132,41 +129,42 @@ async function selectFiles(files: string[], action: string): Promise<string[]> {
  */
 async function main() {
     console.log(chalk.bold("dotenvx-interactive-cli"));
-    console.time("Total Initialization Time");
 
     // Help flag support
-    console.time("Help Flag Check");
     if (process.argv.includes("--help") || process.argv.includes("-h")) {
         console.log(`\n${chalk.bold("dotenvx-interactive-cli")}
 Usage: dotenvx-interactive [options]\n
 Options:
   --help, -h     Show this help message\n`);
-        console.timeEnd("Help Flag Check");
         process.exit(0);
     }
-    console.timeEnd("Help Flag Check");
 
     // Run both checks in parallel
-    console.time("Startup Checks");
     const [isDotenvxInstalled, isEnvKeysFilePresent] = await Promise.all([
         checkDotenvxInstallation(),
         checkEnvKeysFile(),
     ]);
-    console.timeEnd("Startup Checks");
 
     if (!isDotenvxInstalled) {
         console.log(chalk.red("❌ dotenvx is not installed on your system."));
-        console.log(chalk.yellow("Please install it using: npm install -g @dotenvx/dotenvx"));
+        console.log(
+            chalk.yellow(
+                "Please install it using: npm install -g @dotenvx/dotenvx"
+            )
+        );
         throw new Error("dotenvx not installed");
     }
 
     if (!isEnvKeysFilePresent) {
-        console.log(chalk.yellow("No .env.keys file found. Please create one to proceed."));
+        console.log(
+            chalk.yellow(
+                "No .env.keys file found. Please create one to proceed."
+            )
+        );
         throw new Error(".env.keys file not found");
     }
 
     console.log(chalk.green("👌 dotenvx is installed"));
-    console.timeEnd("Total Initialization Time");
     console.log();
 
     const answers = await inquirer.prompt([
@@ -220,9 +218,14 @@ Options:
                         ...selectedFiles
                     );
                     if (execResult.exitCode === 0) {
-                        console.log(chalk.green("✓ Files decrypted successfully"));
+                        console.log(
+                            chalk.green("✓ Files decrypted successfully")
+                        );
                     } else {
-                        console.error(chalk.red("❌ Failed to decrypt files:"), execResult.stderr);
+                        console.error(
+                            chalk.red("❌ Failed to decrypt files:"),
+                            execResult.stderr
+                        );
                     }
                 } else {
                     console.log(
@@ -258,9 +261,18 @@ Options:
     }
 }
 
+process.on("SIGINT", () => {
+    console.log("\n👋 Exiting gracefully. Until next time!");
+    process.exit(0);
+});
+
 process.on("uncaughtException", (error) => {
-    if (error instanceof Error && error.name === "ExitPromptError") {
-        console.log("👋 until next time!");
+    if (
+        (error instanceof Error && error.name === "ExitPromptError") ||
+        (typeof error === "object" && error && (error as any).isTtyError)
+    ) {
+        console.log("👋 Prompt exited. Until next time!");
+        process.exit(0);
     } else {
         console.error(chalk.red("Unexpected error:"), error);
         process.exit(1);
@@ -268,6 +280,13 @@ process.on("uncaughtException", (error) => {
 });
 
 main().catch((err) => {
+    if (
+        (err instanceof Error && err.name === "ExitPromptError") ||
+        (typeof err === "object" && err && (err as any).isTtyError)
+    ) {
+        console.log("👋 Prompt exited. Until next time!");
+        process.exit(0);
+    }
     console.error(chalk.red("❌ An error occurred:"), err);
     process.exit(1);
 });
