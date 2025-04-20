@@ -1,5 +1,11 @@
 # dotenvx-interactive-cli
 
+## 0.3.0
+
+### Minor Changes
+
+- improve perf and switch to tsup bundler
+
 ## 0.2.3
 
 ### Patch Changes
