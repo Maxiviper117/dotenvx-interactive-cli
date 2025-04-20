@@ -1,6 +1,6 @@
 {
     "name": "dotenvx-interactive-cli",
-    "version": "0.2.3",
+    "version": "0.3.0",
     "description": "An interactive CLI tool for managing .env files with dotenvx - encrypt, decrypt, and manage environment variables with ease.",
     "author": "Maxiviper117",
     "license": "MIT",
@@ -16,13 +16,13 @@
         "precommit"
     ],
     "scripts": {
-        "build": "bun run bun.build.js",
+        "build": "tsup",
         "changeset:init": "changeset init",
         "changeset": "changeset",
         "changeset:add": "changeset add",
         "changeset:version": "changeset version",
         "changeset:publish": "changeset publish",
-        "prechangeset:publish": "bun run build"
+        "prechangeset:publish": "npm run build"
     },
     "repository": {
         "type": "git",
@@ -59,7 +59,9 @@
         "zx": "^8.5.3"
     },
     "devDependencies": {
-        "@types/bun": "^1.2.10"
+        "@types/bun": "^1.2.10",
+        "tsup": "^8.4.0",
+        "typescript": "^5.8.3"
     },
     "peerDependencies": {
         "typescript": "^5.8.3"
