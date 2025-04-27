@@ -22,7 +22,7 @@
         "changeset:add": "changeset add",
         "changeset:version": "changeset version",
         "changeset:publish": "changeset publish",
-        "prechangeset:publish": "npm run build"
+        "prechangeset:publish": "pnpm run build"
     },
     "repository": {
         "type": "git",
