@@ -1,3 +1,7 @@
+> [!NOTE]
+> Dotenvx team made vscode plugin to do the same thing -> https://marketplace.visualstudio.com/items?itemName=dotenv.dotenvx-vscode&ssr=false#overview
+
+
 # dotenvx-interactive-cli
 
 An interactive CLI tool for managing your .env files with dotenvx. This tool provides a user-friendly interface for encrypting and decrypting environment files, as well as setting up precommit hooks.
