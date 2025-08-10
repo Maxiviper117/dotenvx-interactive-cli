@@ -1,5 +1,11 @@
 # dotenvx-interactive-cli
 
+## 1.0.0
+
+### Major Changes
+
+- 2ca0557: Updated to use Effect CLI library
+
 ## 0.4.0
 
 ### Minor Changes
