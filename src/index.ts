@@ -1,302 +1,348 @@
-import chalk from "chalk";
-import inquirer from "inquirer";
+import { Args, Command } from "@effect/cli";
+import { NodeContext, NodeRuntime } from "@effect/platform-node";
+import { Console, Effect, Option } from "effect";
 import { promises as fs } from "fs";
 import { spawn, spawnSync } from "child_process";
 import { glob } from "glob";
+import { checkbox } from "@inquirer/prompts";
 
 /**
- * Executes a shell command with proper argument handling using child_process.spawn
+ * Executes a shell command using Effect system
  * @param cmd - The command to execute
  * @param args - Additional arguments to pass to the command
- * @returns Object containing stdout, stderr, and exit code
+ * @returns Effect containing stdout, stderr, and exit code
  */
-async function executeCommand(
+const executeCommand = (
     cmd: string,
     ...args: string[]
-): Promise<{ stdout: string; stderr: string; exitCode: number }> {
-    return new Promise((resolve) => {
+): Effect.Effect<{ stdout: string; stderr: string; exitCode: number }, Error> =>
+    Effect.async<{ stdout: string; stderr: string; exitCode: number }, Error>((resume) => {
         const child = spawn(cmd, args, { shell: true });
         let stdout = "";
         let stderr = "";
+        
         child.stdout?.on("data", (data: Buffer) => {
             process.stdout.write(data);
             stdout += data.toString();
         });
+        
         child.stderr?.on("data", (data: Buffer) => {
             process.stderr.write(data);
             stderr += data.toString();
         });
+        
         child.on("close", (code: number) => {
-            resolve({
+            resume(Effect.succeed({
                 stdout,
                 stderr,
                 exitCode: code ?? 0,
-            });
+            }));
+        });
+        
+        child.on("error", (error) => {
+            resume(Effect.fail(error));
         });
     });
-}
 
 /**
- * Fast check for dotenvx CLI in PATH (using which/where)
- * @returns Promise<boolean>
+ * Fast check for dotenvx CLI in PATH using Effect
+ * @returns Effect<boolean>
  */
-async function checkDotenvxInstallation(): Promise<boolean> {
-    try {
-        const cmd = process.platform === "win32" ? "where" : "which";
-        const result = spawnSync(cmd, ["dotenvx"], { encoding: "utf8" });
-        return result.status === 0;
-    } catch {
-        return false;
-    }
-}
-
-/**
- * Checks for the existence of .env.keys file
- * @returns Promise<boolean> true if .env.keys exists, false otherwise
- */
-async function checkEnvKeysFile(): Promise<boolean> {
-    try {
-        await fs.access(".env.keys");
-        return true;
-    } catch {
-        return false;
-    }
-}
-
-/**
- * Finds all .env files in the current directory, excluding .env.keys and .vault files
- * @returns Promise<string[]> Array of found .env file paths
- */
-async function findEnvFiles(): Promise<string[]> {
-    const files = await glob(".env*", {
-        ignore: [".env.keys", ".env.keys.json", "*.vault"],
-        nodir: true,
+const checkDotenvxInstallation = (): Effect.Effect<boolean, never> =>
+    Effect.sync(() => {
+        try {
+            const cmd = process.platform === "win32" ? "where" : "which";
+            const result = spawnSync(cmd, ["dotenvx"], { encoding: "utf8" });
+            return result.status === 0;
+        } catch {
+            return false;
+        }
     });
-    return files.filter(
-        (file) => !file.endsWith(".keys") && !file.endsWith(".vault")
-    );
-}
 
 /**
- * Displays an interactive prompt for selecting .env files
+ * Checks for the existence of .env.keys file using Effect
+ * @returns Effect<boolean> true if .env.keys exists, false otherwise
+ */
+const checkEnvKeysFile = (): Effect.Effect<boolean, never> =>
+    Effect.tryPromise({
+        try: () => fs.access(".env.keys"),
+        catch: () => new Error("File not found")
+    })
+    .pipe(
+        Effect.map(() => true),
+        Effect.catchAll(() => Effect.succeed(false))
+    );
+
+/**
+ * Finds all .env files in the current directory using Effect
+ * @returns Effect<string[]> Array of found .env file paths
+ */
+const findEnvFiles = (): Effect.Effect<string[], Error> =>
+    Effect.tryPromise({
+        try: async () => {
+            const files = await glob(".env*", {
+                ignore: [".env.keys", ".env.keys.json", "*.vault"],
+                nodir: true,
+            });
+            return files.filter(
+                (file) => !file.endsWith(".keys") && !file.endsWith(".vault")
+            );
+        },
+        catch: (error) => new Error(`Failed to find env files: ${error}`)
+    });
+
+/**
+ * Interactive file selection using inquirer prompts wrapped in Effect
  * @param files - Array of .env files to choose from
  * @param action - The action to perform on selected files (encrypt/decrypt)
- * @returns Promise<string[]> Array of selected file paths
+ * @returns Effect<string[]> Array of selected file paths
  */
-async function selectFiles(files: string[], action: string): Promise<string[]> {
-    if (files.length === 0) {
-        console.log(
-            chalk.yellow("No .env files found in the current directory.")
-        );
-        return [];
-    }
-
-    const { selectedFiles } = await inquirer.prompt({
-        type: "checkbox",
-        name: "selectedFiles",
-        message: `Select .env files to ${action}:\n`,
-        // instructions: chalk.dim("(Press Space to select, Enter to confirm)"),
-        instructions: `${chalk.dim("(Press ")} ${chalk.blue(
-            "Space"
-        )} ${chalk.dim("to select, ")}${chalk.blue("Enter")} ${chalk.dim(
-            "to confirm, "
-        )}${chalk.blue("Ctrl/Cmd + C")} ${chalk.dim("to exit)")} `,
-        choices: [
-            {
-                name: `All files ${chalk.dim("← Select all .env files")}`,
-                value: "ALL",
-                short: "All files",
-            },
-            new inquirer.Separator(),
-            ...files.map((file) => ({
-                name: `${file} ${chalk.dim("← Press Space to select")}`,
-                value: file,
-                short: file,
-            })),
-        ],
-        pageSize: 10,
-        loop: false,
-        prefix: chalk.blue("?"),
-        validate: (answer: any) => {
-            if (answer.length === 0) {
-                return "Please select at least one file to proceed";
+const selectFilesInteractively = (
+    files: string[], 
+    action: string
+): Effect.Effect<string[], Error> =>
+    Effect.tryPromise({
+        try: async () => {
+            if (files.length === 0) {
+                return [];
             }
-            return true;
+
+            const choices = [
+                {
+                    name: `🗂️  All files (${files.length} files)`,
+                    value: "ALL",
+                    short: "All files",
+                },
+                ...files.map((file) => ({
+                    name: `📄 ${file}`,
+                    value: file,
+                    short: file,
+                })),
+            ];
+
+            const selectedFiles = await checkbox({
+                message: `Select .env files to ${action}:`,
+                choices,
+                instructions: "Press Space to select, Enter to confirm, Ctrl+C to cancel",
+            });
+
+            // If "ALL" is selected, return all files
+            if (selectedFiles.includes("ALL")) {
+                return files;
+            }
+
+            return selectedFiles;
         },
+        catch: (error) => {
+            // Handle user cancellation (Ctrl+C) gracefully
+            if (error instanceof Error && error.name === "ExitPromptError") {
+                return new Error("User cancelled selection");
+            }
+            return new Error(`Interactive selection failed: ${error}`)
+        }
     });
 
-    // If "ALL" is selected, return all files
-    if (selectedFiles.includes("ALL")) {
-        return files;
-    }
-
-    return selectedFiles;
-}
-
 /**
- * Main application function that handles the interactive CLI workflow
- * Optimized for performance: checks for dotenvx and .env.keys in parallel
+ * Validates that dotenvx is installed and .env.keys file exists
  */
-async function main() {
-    console.log(chalk.bold("dotenvx-interactive-cli"));
-
-    // Help flag support
-    if (process.argv.includes("--help") || process.argv.includes("-h")) {
-        console.log(`\n${chalk.bold("dotenvx-interactive-cli")}
-Usage: dotenvx-interactive [options]\n
-Options:
-  --help, -h     Show this help message\n`);
-        process.exit(0);
-    }
-
+const validatePrerequisites = Effect.gen(function* () {
+    yield* Console.log("dotenvx-interactive-cli");
+    
     // Run both checks in parallel
-    const [isDotenvxInstalled, isEnvKeysFilePresent] = await Promise.all([
+    const [isDotenvxInstalled, isEnvKeysFilePresent] = yield* Effect.all([
         checkDotenvxInstallation(),
         checkEnvKeysFile(),
     ]);
 
     if (!isDotenvxInstalled) {
-        console.log(chalk.red("❌ dotenvx is not installed on your system."));
-        console.log(
-            chalk.yellow(
-                "Please install it using: npm install -g @dotenvx/dotenvx"
-            )
-        );
-        throw new Error("dotenvx not installed");
+        yield* Console.log("❌ dotenvx is not installed on your system.");
+        yield* Console.log("Please install it using: npm install -g @dotenvx/dotenvx");
+        return yield* Effect.fail(new Error("dotenvx not installed"));
     }
 
     if (!isEnvKeysFilePresent) {
-        console.log(
-            chalk.yellow(
-                "No .env.keys file found. Please create one to proceed."
-            )
-        );
-        throw new Error(".env.keys file not found");
+        yield* Console.log("No .env.keys file found. Please create one to proceed.");
+        return yield* Effect.fail(new Error(".env.keys file not found"));
     }
 
-    console.log(chalk.green("👌 dotenvx is installed"));
-    console.log();
+    yield* Console.log("👌 dotenvx is installed");
+    return true;
+});
 
-    const answers = await inquirer.prompt([
-        {
-            type: "list",
-            name: "action",
-            message: "What would you like to do?",
-            choices: [
-                { name: "Encrypt .env files", value: "encrypt" },
-                { name: "Decrypt .env files", value: "decrypt" },
-                { name: "Install precommit hook", value: "precommit" },
-                { name: "Exit", value: "exit" },
-            ],
-        },
-    ]);
+// Arguments for file selection
+const files = Args.text({ name: "files" }).pipe(Args.repeated, Args.optional);
 
-    console.log();
-
-    switch (answers.action) {
-        case "encrypt":
-            try {
-                const files = await findEnvFiles();
-                const selectedFiles = await selectFiles(files, "encrypt");
-                if (selectedFiles.length > 0) {
-                    await executeCommand(
-                        "dotenvx",
-                        "encrypt",
-                        "-f",
-                        ...selectedFiles
-                    );
-                    console.log(chalk.green("✓ Files encrypted successfully"));
-                } else {
-                    console.log(
-                        chalk.yellow("No files selected for encryption")
-                    );
-                }
-            } catch (error) {
-                console.error(chalk.red("Error encrypting files:"), error);
-                throw error;
+// dotenvx-interactive-cli encrypt [-f files...]
+const encryptCommand = Command.make(
+    "encrypt",
+    { files },
+    ({ files }) =>
+        Effect.gen(function* () {
+            yield* validatePrerequisites;
+            
+            const envFiles = yield* findEnvFiles();
+            
+            if (envFiles.length === 0) {
+                yield* Console.log("No .env files found in the current directory.");
+                return;
             }
-            break;
-        case "decrypt":
-            try {
-                const files = await findEnvFiles();
-                const selectedFiles = await selectFiles(files, "decrypt");
-                if (selectedFiles.length > 0) {
-                    const execResult = await executeCommand(
-                        "dotenvx",
-                        "decrypt",
-                        "-f",
-                        ...selectedFiles
-                    );
-                    if (execResult.exitCode === 0) {
-                        console.log(
-                            chalk.green("✓ Files decrypted successfully")
-                        );
+            
+            // Determine files to encrypt
+            let filesToEncrypt: string[];
+            
+            if (Option.isSome(files) && files.value.length > 0) {
+                // Use provided files directly
+                filesToEncrypt = files.value;
+            } else {
+                // Show interactive selection
+                yield* Console.log("");
+                
+                const result = yield* Effect.either(selectFilesInteractively(envFiles, "encrypt"));
+                
+                if (result._tag === "Left") {
+                    if (result.left.message === "User cancelled selection") {
+                        yield* Console.log("👋 Selection cancelled. Until next time!");
+                        return;
                     } else {
-                        console.error(
-                            chalk.red("❌ Failed to decrypt files:"),
-                            execResult.stderr
-                        );
+                        return yield* Effect.fail(result.left);
                     }
-                } else {
-                    console.log(
-                        chalk.yellow("No files selected for decryption")
-                    );
                 }
-            } catch (error) {
-                console.error(chalk.red("Error decrypting files:"), error);
-                throw error;
+                
+                filesToEncrypt = result.right;
+                
+                if (filesToEncrypt.length === 0) {
+                    yield* Console.log("No files selected for encryption");
+                    return;
+                }
             }
-            break;
-        case "precommit":
-            try {
-                await executeCommand(
-                    "dotenvx",
-                    "ext",
-                    "precommit",
-                    "--install"
-                );
-                console.log(
-                    chalk.green("👍 Precommit hook installed successfully")
-                );
-            } catch (error) {
-                console.error(
-                    chalk.red("Error installing precommit hook:"),
-                    error
-                );
-                throw error;
+            
+            yield* Console.log(`Encrypting files: ${filesToEncrypt.join(", ")}`);
+            const result = yield* executeCommand("dotenvx", "encrypt", "-f", ...filesToEncrypt);
+            
+            if (result.exitCode === 0) {
+                yield* Console.log("✓ Files encrypted successfully");
+            } else {
+                yield* Console.error(`❌ Failed to encrypt files: ${result.stderr}`);
+                return yield* Effect.fail(new Error("Encryption failed"));
             }
-            break;
-        case "exit":
-            throw new Error("User exited");
-    }
-}
+        })
+);
 
+// dotenvx-interactive-cli decrypt [-f files...]
+const decryptCommand = Command.make(
+    "decrypt",
+    { files },
+    ({ files }) =>
+        Effect.gen(function* () {
+            yield* validatePrerequisites;
+            
+            const envFiles = yield* findEnvFiles();
+            
+            if (envFiles.length === 0) {
+                yield* Console.log("No .env files found in the current directory.");
+                return;
+            }
+            
+            // Determine files to decrypt
+            let filesToDecrypt: string[];
+            
+            if (Option.isSome(files) && files.value.length > 0) {
+                // Use provided files directly
+                filesToDecrypt = files.value;
+            } else {
+                // Show interactive selection
+                yield* Console.log("");
+                
+                const result = yield* Effect.either(selectFilesInteractively(envFiles, "decrypt"));
+                
+                if (result._tag === "Left") {
+                    if (result.left.message === "User cancelled selection") {
+                        yield* Console.log("👋 Selection cancelled. Until next time!");
+                        return;
+                    } else {
+                        return yield* Effect.fail(result.left);
+                    }
+                }
+                
+                filesToDecrypt = result.right;
+                
+                if (filesToDecrypt.length === 0) {
+                    yield* Console.log("No files selected for decryption");
+                    return;
+                }
+            }
+            
+            yield* Console.log(`Decrypting files: ${filesToDecrypt.join(", ")}`);
+            const result = yield* executeCommand("dotenvx", "decrypt", "-f", ...filesToDecrypt);
+            
+            if (result.exitCode === 0) {
+                yield* Console.log("✓ Files decrypted successfully");
+            } else {
+                yield* Console.error(`❌ Failed to decrypt files: ${result.stderr}`);
+                return yield* Effect.fail(new Error("Decryption failed"));
+            }
+        })
+);
+
+// dotenvx-interactive-cli precommit
+const precommitCommand = Command.make(
+    "precommit",
+    {},
+    () =>
+        Effect.gen(function* () {
+            yield* validatePrerequisites;
+            yield* Console.log("Installing precommit hook...");
+            const result = yield* executeCommand("dotenvx", "ext", "precommit", "--install");
+            
+            if (result.exitCode === 0) {
+                yield* Console.log("👍 Precommit hook installed successfully");
+            } else {
+                yield* Console.error(`❌ Failed to install precommit hook: ${result.stderr}`);
+                return yield* Effect.fail(new Error("Precommit installation failed"));
+            }
+        })
+);
+
+// Main command - if no subcommand is provided, show interactive menu
+const mainCommand = Command.make(
+    "dotenvx-interactive-cli",
+    {},
+    () =>
+        Effect.gen(function* () {
+            yield* validatePrerequisites;
+            yield* Console.log("");
+            yield* Console.log("Available commands:");
+            yield* Console.log("  encrypt    - Encrypt .env files");
+            yield* Console.log("  decrypt    - Decrypt .env files");
+            yield* Console.log("  precommit  - Install precommit hook");
+            yield* Console.log("");
+            yield* Console.log("Use --help with any command for more information.");
+        })
+);
+
+// Combine all commands
+const cli = mainCommand.pipe(
+    Command.withSubcommands([encryptCommand, decryptCommand, precommitCommand])
+);
+
+// Set up the CLI application
+const app = Command.run(cli, {
+    name: "dotenvx-interactive-cli",
+    version: "0.4.0",
+});
+
+// Handle graceful exit
 process.on("SIGINT", () => {
     console.log("\n👋 Exiting gracefully. Until next time!");
     process.exit(0);
 });
 
-process.on("uncaughtException", (error) => {
-    if (
-        (error instanceof Error && error.name === "ExitPromptError") ||
-        (typeof error === "object" && error && (error as any).isTtyError)
-    ) {
-        console.log("👋 Prompt exited. Until next time!");
-        process.exit(0);
-    } else {
-        console.error(chalk.red("Unexpected error:"), error);
-        process.exit(1);
-    }
-});
-
-main().catch((err) => {
-    if (
-        (err instanceof Error && err.name === "ExitPromptError") ||
-        (typeof err === "object" && err && (err as any).isTtyError)
-    ) {
-        console.log("👋 Prompt exited. Until next time!");
-        process.exit(0);
-    }
-    console.error(chalk.red("❌ An error occurred:"), err);
-    process.exit(1);
-});
+// Run the application
+Effect.suspend(() => app(process.argv))
+    .pipe(
+        Effect.provide(NodeContext.layer),
+        Effect.catchAll((error) =>
+            Console.error(`❌ An error occurred: ${error}`)
+        )
+    )
+    .pipe(NodeRuntime.runMain);

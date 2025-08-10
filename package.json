@@ -50,12 +50,12 @@
     },
     "dependencies": {
         "@changesets/cli": "^2.29.2",
+        "@effect/cli": "^0.69.0",
+        "@effect/platform-node": "^0.95.0",
+        "@inquirer/prompts": "^7.1.0",
         "@types/glob": "^8.1.0",
-        "brace-expansion": "^4.0.0",
-        "chalk": "^5.4.1",
-        "commander": "^13.1.0",
-        "glob": "^11.0.1",
-        "inquirer": "^12.5.2"
+        "effect": "^3.17.7",
+        "glob": "^11.0.1"
     },
     "devDependencies": {
         "@types/bun": "^1.2.10",
