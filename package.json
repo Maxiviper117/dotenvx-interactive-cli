@@ -16,13 +16,7 @@
         "precommit"
     ],
     "scripts": {
-        "build": "tsup",
-        "changeset:init": "changeset init",
-        "changeset": "changeset",
-        "changeset:add": "changeset add",
-        "changeset:version": "changeset version",
-        "changeset:publish": "changeset publish",
-        "prechangeset:publish": "pnpm run build"
+        "build": "tsup"
     },
     "repository": {
         "type": "git",
@@ -49,13 +43,12 @@
         "node": ">=16.0.0"
     },
     "dependencies": {
-        "@changesets/cli": "^2.29.2",
         "@effect/cli": "^0.69.0",
         "@effect/platform-node": "^0.95.0",
-        "@inquirer/prompts": "^7.1.0",
+        "@inquirer/prompts": "^8.5.0",
         "@types/glob": "^8.1.0",
         "effect": "^3.17.7",
-        "glob": "^11.0.1"
+        "glob": "^11.1.0"
     },
     "devDependencies": {
         "@types/bun": "^1.2.10",
