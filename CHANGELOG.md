@@ -1,5 +1,14 @@
 # dotenvx-interactive-cli
 
+## [1.1.1](https://github.com/Maxiviper117/dotenvx-interactive-cli/compare/dotenvx-interactive-cli-v1.1.0...dotenvx-interactive-cli-v1.1.1) (2026-05-28)
+
+
+### Bug Fixes
+
+* **ci:** remove invalid cache: false from setup-node ([a6aad79](https://github.com/Maxiviper117/dotenvx-interactive-cli/commit/a6aad7988ce6f5c80d06fa693da612300ea2780a))
+* **ci:** update npm before staging for 11.15+ support ([b90b9f7](https://github.com/Maxiviper117/dotenvx-interactive-cli/commit/b90b9f7cb2e0c81c8b38509ba13f45df8aacdc7c))
+* **ci:** use --ignore-scripts for pnpm install ([d1c8762](https://github.com/Maxiviper117/dotenvx-interactive-cli/commit/d1c8762a2961a1b22d199b79831d30d53bf53d32))
+
 ## [1.1.0](https://github.com/Maxiviper117/dotenvx-interactive-cli/compare/dotenvx-interactive-cli-v1.0.0...dotenvx-interactive-cli-v1.1.0) (2026-05-28)
 
 
