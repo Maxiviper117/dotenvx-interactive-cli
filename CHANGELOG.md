@@ -1,5 +1,12 @@
 # dotenvx-interactive-cli
 
+## [1.3.1](https://github.com/Maxiviper117/dotenvx-interactive-cli/compare/dotenvx-interactive-cli-v1.3.0...dotenvx-interactive-cli-v1.3.1) (2026-05-28)
+
+
+### Bug Fixes
+
+* update pnpm/action-setup version to ensure compatibility ([49d8a0b](https://github.com/Maxiviper117/dotenvx-interactive-cli/commit/49d8a0b0996ed6bc7b3128faf99e323465b241c6))
+
 ## [1.3.0](https://github.com/Maxiviper117/dotenvx-interactive-cli/compare/dotenvx-interactive-cli-v1.2.0...dotenvx-interactive-cli-v1.3.0) (2026-05-28)
 
 
