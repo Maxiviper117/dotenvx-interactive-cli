@@ -1,5 +1,12 @@
 # dotenvx-interactive-cli
 
+## [1.3.2](https://github.com/Maxiviper117/dotenvx-interactive-cli/compare/dotenvx-interactive-cli-v1.3.1...dotenvx-interactive-cli-v1.3.2) (2026-06-01)
+
+
+### Bug Fixes
+
+* Fix Effect package alignment ([#15](https://github.com/Maxiviper117/dotenvx-interactive-cli/issues/15)) ([b08033c](https://github.com/Maxiviper117/dotenvx-interactive-cli/commit/b08033c188cdd1fcee1773b68e2f53f585c7abed))
+
 ## [1.3.1](https://github.com/Maxiviper117/dotenvx-interactive-cli/compare/dotenvx-interactive-cli-v1.3.0...dotenvx-interactive-cli-v1.3.1) (2026-05-28)
 
 
