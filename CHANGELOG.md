@@ -1,5 +1,12 @@
 # dotenvx-interactive-cli
 
+## [1.3.3](https://github.com/Maxiviper117/dotenvx-interactive-cli/compare/dotenvx-interactive-cli-v1.3.2...dotenvx-interactive-cli-v1.3.3) (2026-06-01)
+
+
+### Bug Fixes
+
+* remove package manager pin ([#17](https://github.com/Maxiviper117/dotenvx-interactive-cli/issues/17)) ([77db92d](https://github.com/Maxiviper117/dotenvx-interactive-cli/commit/77db92d962c23a04059497a7888e5ae69cd4c15b))
+
 ## [1.3.2](https://github.com/Maxiviper117/dotenvx-interactive-cli/compare/dotenvx-interactive-cli-v1.3.1...dotenvx-interactive-cli-v1.3.2) (2026-06-01)
 
 
