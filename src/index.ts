@@ -1,10 +1,16 @@
 import { Args, Command } from "@effect/cli";
 import { NodeContext, NodeRuntime } from "@effect/platform-node";
 import { Console, Effect, Option } from "effect";
-import { promises as fs } from "fs";
 import { spawn, spawnSync } from "child_process";
-import { glob } from "glob";
+import { createRequire } from "module";
+import { promises as fs } from "fs";
+import { fileURLToPath } from "url";
 import { checkbox } from "@inquirer/prompts";
+import { findEnvFiles } from "./findEnvFiles.js";
+
+const require = createRequire(import.meta.url);
+const pkg = require("../package.json") as { version: string };
+export const VERSION = pkg.version;
 
 /**
  * Executes a shell command using Effect system
@@ -17,7 +23,7 @@ const executeCommand = (
     ...args: string[]
 ): Effect.Effect<{ stdout: string; stderr: string; exitCode: number }, Error> =>
     Effect.async<{ stdout: string; stderr: string; exitCode: number }, Error>((resume) => {
-        const child = spawn(cmd, args, { shell: true });
+        const child = spawn(cmd, args);
         let stdout = "";
         let stderr = "";
         
@@ -74,24 +80,6 @@ const checkEnvKeysFile = (): Effect.Effect<boolean, never> =>
     );
 
 /**
- * Finds all .env files in the current directory using Effect
- * @returns Effect<string[]> Array of found .env file paths
- */
-const findEnvFiles = (): Effect.Effect<string[], Error> =>
-    Effect.tryPromise({
-        try: async () => {
-            const files = await glob(".env*", {
-                ignore: [".env.keys", ".env.keys.json", "*.vault"],
-                nodir: true,
-            });
-            return files.filter(
-                (file) => !file.endsWith(".keys") && !file.endsWith(".vault")
-            );
-        },
-        catch: (error) => new Error(`Failed to find env files: ${error}`)
-    });
-
-/**
  * Interactive file selection using inquirer prompts wrapped in Effect
  * @param files - Array of .env files to choose from
  * @param action - The action to perform on selected files (encrypt/decrypt)
@@ -123,7 +111,6 @@ const selectFilesInteractively = (
             const selectedFiles = await checkbox({
                 message: `Select .env files to ${action}:`,
                 choices,
-                instructions: "Press Space to select, Enter to confirm, Ctrl+C to cancel",
             });
 
             // If "ALL" is selected, return all files
@@ -328,21 +315,19 @@ const cli = mainCommand.pipe(
 // Set up the CLI application
 const app = Command.run(cli, {
     name: "dotenvx-interactive-cli",
-    version: "0.4.0",
+    version: VERSION,
 });
 
-// Handle graceful exit
-process.on("SIGINT", () => {
-    console.log("\n👋 Exiting gracefully. Until next time!");
-    process.exit(0);
-});
-
-// Run the application
-Effect.suspend(() => app(process.argv))
-    .pipe(
-        Effect.provide(NodeContext.layer),
-        Effect.catchAll((error) =>
-            Console.error(`❌ An error occurred: ${error}`)
+// Run the application only when invoked as the entry point.
+// Prevents the CLI from executing on `import` (used by tests).
+const isMain = process.argv[1] === fileURLToPath(import.meta.url);
+if (isMain) {
+    Effect.suspend(() => app(process.argv))
+        .pipe(
+            Effect.provide(NodeContext.layer),
+            Effect.catchAll((error) =>
+                Console.error(`❌ An error occurred: ${error}`)
+            )
         )
-    )
-    .pipe(NodeRuntime.runMain);
+        .pipe(NodeRuntime.runMain);
+}

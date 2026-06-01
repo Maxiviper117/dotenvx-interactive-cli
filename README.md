@@ -18,7 +18,7 @@ This tool was created to simplify the process of working with dotenvx encryption
 
 ## Prerequisites
 
-- [Node.js](https://nodejs.org/) (v16 or higher)
+- [Node.js](https://nodejs.org/) (v22 or higher)
 - [dotenvx](https://github.com/dotenvx/dotenvx) must be installed globally (`npm install -g @dotenvx/dotenvx`)
 
 ## Installation

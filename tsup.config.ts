@@ -1,16 +1,16 @@
 import { defineConfig } from 'tsup';
 
 export default defineConfig({
-    entry: ["src/index.ts"],
+    entry: ["src/index.ts", "src/findEnvFiles.ts"],
     outDir: "dist",
     format: ["esm"],
     target: "node18",
-    splitting: false, // No code splitting for single entry
+    splitting: false,
     clean: true,
-    dts: false, // Disable type definitions for faster builds
-    minify: false, // Disable minification for faster builds
+    dts: false,
+    minify: false,
     sourcemap: false,
-    treeshake: true, // Enable tree-shaking
+    treeshake: true,
     bundle: false,
     banner: {
         js: "#!/usr/bin/env node",
